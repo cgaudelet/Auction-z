@@ -1,0 +1,337 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Auction-Z - Lots list</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+		<meta charset="UTF-8">
+		<link href="css/reset.css" rel="stylesheet" />
+		<link href="scripts/toggles/css/toggles.css" rel="stylesheet" />
+		<link href="scripts/toggles/css/themes/toggles-modern.css" rel="stylesheet" />
+		<link href="css/auction-z.css" rel="stylesheet" />
+		<link href="scripts/jquery/jquery-ui-aec.css" rel="stylesheet" />
+		<script type="text/javascript" charset="utf-8" src="cordova.js"></script>
+		<script src="scripts/jquery/jquery-1.7.1.js"></script>
+		<script src="scripts/jquery/jquery-ui-1.8.17.min.js"></script>
+		<script src="scripts/jquery/moment-with-locales.js"></script>
+		<script src="scripts/toggles/js/toggles.min.js"></script>
+		<script src="scripts/default.js"></script>
+		<script type="text/javascript" src="scripts/PushNotification.js"></script>
+
+<script type="text/javascript" charset="utf-8">
+
+document.addEventListener('deviceready', init_push, false);
+
+$(function() {
+	
+	//LABELS
+	$("h1").html(jsonLang.LABEL_LOT_LIST);
+	$("#filter_date").html(jsonLang.LABEL_DATE);
+	$("#filter_price").html(jsonLang.LABEL_PRICE);
+	$("#filter_date_all").html(jsonLang.LABEL_ALL);
+	$("#filter_date_current").html(jsonLang.LABEL_CURRENT);
+	$("#filter_date_future").html(jsonLang.LABEL_FUTURE);
+	$("#filter_date_past").html(jsonLang.LABEL_PAST);
+	$("#tbSearch").attr("placeholder", jsonLang.LABEL_SEARCH);
+
+    //moment.locale(localStorage.getItem("language"));
+	moment.locale('en');
+	/* Liste des lots */
+	var filter = "";
+	if (localStorage.getItem("filter") != null)
+	{
+		filter = localStorage.getItem("filter");
+	}
+	else
+	{
+		filter = "DATE_ALL";
+	}
+	var order = "";
+	if (localStorage.getItem("order") != null)
+	{
+		order = localStorage.getItem("order");
+	}
+	else
+	{
+		order = "PRICE_DESCRECENT";
+	}
+	var search = "";
+	if (localStorage.getItem("search") != null)
+	{
+		search = localStorage.getItem("search");
+	}
+	var xmlLots = xmlHeader + '<lots filter="' + filter + '" order="' + order + '" search="' + search + '" />' + xmlFooter;
+	$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlLots }, xhrFields: { withCredentials: true } }).done(function (result)
+	{
+		if ($(result).find("message").text() != "You must logging")
+		{
+			var nbLot = $(result).find("lot").length;
+			if (nbLot == 0)
+			{
+				$("#lots").append(jsonLang.LABEL_NO_RESULT);
+			}
+			$($.parseXML(result)).find("lot").each(function (indexLot)
+			{
+				lot = '<div class="lot display_' + localStorage.getItem("language") +'" data-id="'+ $(this).attr("lot_id") +'"';
+
+				if ($(this).attr("background_color") != "")
+				{
+					lot += ' style="background-color: ' + $(this).attr("background_color") + ';"';
+				}
+				lot += ">";
+				lot += '<div class="image">';
+							
+				if ($(this).find("photos").find("photo_default_url").text() != "")
+				{
+					lot += '<img src="' + $(this).find("photos").find("photo_default_url").text() + '" />';
+				}
+				else
+				{
+					lot += '<img src="css/img/none.png" />';
+				}
+
+				lot += '<img class="category" src="' + $(this).find("category").attr("img-url") + '" />';
+				lot += '<img class="family" src="' + $(this).find("family").attr("img-url") + '" />';
+				lot += '</div>';
+
+				lot += '<h2 style="color:'+ $(this).find("label").attr("color") +'">';
+				lot += $(this).find("label").text().replace('"', '').replace('"', '');
+				lot += '</h2>';
+				//les dates
+				var startDate = moment($(this).find("start_date").text());
+				var endDate = moment($(this).find("end_date").text());
+				lot += '<h3>' + startDate.format("MMM D YYYY") + '&nbsp;&gt;&nbsp;' + endDate.format("MMM D YYYY") + '</h3>';
+								
+								
+				var currencyChangeActuelle = 0;
+				var currencyChangeTable = $(this).find("currency_change").text().split(';');
+				for (var i = 0; i < currencyChangeTable.length; i++)
+				{
+					if (currencyChangeTable[i].substring(0, 3) == localStorage.getItem("currency_user"))
+					{
+						currencyChangeActuelle = currencyChangeTable[i].replace(localStorage.getItem("currency_user") + ":", "")
+					}
+				}
+
+				if ($(this).find("highest_bid").find("current_bid").text() != "")
+				{
+				    current_bid = $(this).find("highest_bid").find("current_bid").text() * currencyChangeActuelle;
+					lot += '<h4>' + formatNumber(current_bid);
+					lot += " " + localStorage.getItem("currency_user") + '</h4>';
+				}
+				else
+				{
+					lot += '<h4>' +$(this).find("current_bid").text() * currencyChangeActuelle;
+					lot += " " + localStorage.getItem("currency_user") + '</h4>';
+				}
+
+
+				
+
+                //on ajoute le follow
+                lot += '<div class="follow_lots toggle toggle-modern" data-toggle-on="' +((($(this).attr("followed") == "1"))?'true':'false') +'"></div>';
+				//on ferme la div
+				lot += "</div>";
+							
+
+
+				$("#lots").append(lot);
+
+				/* Buttons Follow 
+				if ($(this).attr("followed") == "1")
+				{
+					$("#cbFollowed" + $(this).attr("lot_id")).toggles({ on: true, text: { on: jsonLang.LABEL_FOLLOWED, off: jsonLang.LABEL_UNFOLLOWED } });
+				}
+				else
+				{
+					$("#cbFollowed" + $(this).attr("lot_id")).toggles({ on: false, text: { on: jsonLang.LABEL_FOLLOWED, off: jsonLang.LABEL_UNFOLLOWED } });
+				}*/
+			});
+			
+			$('.toggle').toggles({
+                text: {
+                    on: jsonLang.LABEL_FOLLOWED, // text for the ON position
+                    off: jsonLang.LABEL_UNFOLLOWED // and off
+                }
+            });
+
+		}
+		else
+		{
+			var xmlLogin = xmlHeader + '<login email="' + localStorage.getItem("email") + '" password="' + localStorage.getItem("key") + '" md5="true" />' + xmlFooter;
+			$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlLogin }, xhrFields: { withCredentials: true } }).done(function (result)
+			{
+				if ($(result).find("login").attr("status") == "success")
+				{
+					location.reload();
+				}
+				else
+				{
+					window.location.href = "index.html";
+				}
+			});
+		}
+
+		//$('#result').html(result);
+	});
+
+	
+    
+	$(document).on("click",".lot, .lot h2, .lot h3, .lot h4",function() {
+		window.location = 'lot.html?l=' + $(this).data('id');
+	});
+	
+	/* Buttons Follow */
+	$(document).off("click",".toggle");
+	$(document).on("click",".toggle", function (e, active)
+	{
+	    e.stopPropagation();
+		var xmlFollow = xmlHeader + '<follow lot_id="' + $(this).parent().data('id') + '" />' + xmlFooter;
+		$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlFollow }, xhrFields: { withCredentials: true } }).done(function (result)
+		{
+			if ($(result).find("follow").attr("status") == "success")
+			{
+				ShowMessageBox("success", $(result).find("message").text());
+			}
+			else
+			{
+				ShowMessageBox("error", $(result).find("message").text());
+			}
+		});
+	});
+	
+
+
+
+	/* Initialisations Boutons Filtres */
+	if (filter == "DATE_ALL")
+	{
+		$("#filter_date_all").addClass('selected');
+	}
+	else if (filter == "DATE_CURRENT")
+	{
+		$("#filter_date").addClass('selected');
+		$("#filters_date").show();
+		$("#filter_date_current").addClass('selected');
+	}
+	else if (filter == "DATE_FUTURE")
+	{
+		$("#filter_date").addClass('selected');
+		$("#filters_date").show();
+		$("#filter_date_future").addClass('selected');
+	}
+	else if (filter == "DATE_PAST")
+	{
+		$("#filter_date").addClass('selected');
+		$("#filters_date").show();
+		$("#filter_date_past").addClass('selected');
+	}
+
+	if (order == "PRICE_CRESCENT")
+	{
+		$("#filter_price").addClass('asc');
+	}
+	else
+	{
+		$("#filter_price").addClass('desc');
+	}
+
+	if (search != "")
+	{
+		$("#filter_search").addClass('selected');
+		$('#tbSearch').val(search);
+	}
+
+	/* Level 1 */
+	$("#filter_date").click(function ()
+	{
+		$("#filters_date").toggle();
+		$("#tbSearch").hide();
+	});
+	$("#filter_price").click(function ()
+	{
+		if (order == "PRICE_CRESCENT")
+		{
+			localStorage.setItem("order", "PRICE_DESCRECENT");
+		}
+		else
+		{
+			localStorage.setItem("order", "PRICE_CRESCENT");
+		}
+		location.reload();
+	});
+	$("#filter_search").click(function ()
+	{
+		$("#tbSearch").toggle();
+		$("#filters_date").hide();
+	});
+
+	/* Level 2 Dates */
+	$("#filter_date_all").click(function ()
+	{
+		localStorage.setItem("filter", "DATE_ALL");
+		location.reload();
+	});
+	$("#filter_date_current").click(function ()
+	{
+		localStorage.setItem("filter", "DATE_CURRENT");
+		location.reload();
+	});
+	$("#filter_date_future").click(function ()
+	{
+		localStorage.setItem("filter", "DATE_FUTURE");
+		location.reload();
+	});
+	$("#filter_date_past").click(function ()
+	{
+		localStorage.setItem("filter", "DATE_PAST");
+		location.reload();
+	});
+
+	/* Level 2 Search */
+	$("#tbSearch").change(function ()
+	{
+		localStorage.setItem("search", $('#tbSearch').val());
+		location.reload();
+	});
+
+	$('#menu').load('menu.html');
+
+	pushNotifs();
+	
+});
+</script>
+</head>
+<body>
+<div id="header">
+<img id="logo" src="css/img/picto-logo-auction-z.png" />
+<div id="notif_counter"></div>
+<div id="notifs"></div>
+<div id="bt_menu" data-open="0"></div>
+<div id="menu"></div>
+</div>
+<h1></h1>
+<div id="conteneur">
+<div id="lots_filters">
+<ul>
+<li id="filter_date">
+<span></span>
+</li>
+<li id="filter_price"><span></span></li>
+<li id="filter_search"><span></span></li>
+</ul>
+
+<ul id="filters_date">
+<li id="filter_date_all"><span></span></li>
+<li id="filter_date_current"><span></span></li>
+<li id="filter_date_future"><span></span></li>
+<li id="filter_date_past"><span></span></li>
+</ul>
+<input id="tbSearch" type="text" class="inputs" />
+</div>
+<div id="lots">
+<!-- les lots sont chargés ici -->
+</div>
+</div>
+<div id="messageBox"></div>
+</body>
+</html>

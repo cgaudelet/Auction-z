@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Auction-Z - edit picture</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+		<meta charset="UTF-8">
+		<link href="css/reset.css" rel="stylesheet" />
+		<link href="css/auction-z.css" rel="stylesheet" />
+		<script src="scripts/jquery/jquery-2.1.0.min.js"></script>
+		<script src="scripts/default.js"></script>
+    <script type="text/javascript" charset="utf-8" src="cordova.js"></script>
+    <script type="text/javascript" charset="utf-8">
+
+    var pictureSource;   // picture source
+    var destinationType; // sets the format of returned value
+
+    // Wait for device API libraries to load
+    //
+    document.addEventListener("deviceready",onDeviceReady,false);
+
+    // device APIs are available
+    //
+    function onDeviceReady() {
+        pictureSource=navigator.camera.PictureSourceType;
+        destinationType=navigator.camera.DestinationType;
+    }
+
+    // Called when a photo is successfully retrieved
+    //
+    function onPhotoDataSuccess(imageData) {
+      // Uncomment to view the base64-encoded image data
+      // console.log(imageData);
+
+      // Get image handle
+      //
+      var smallImage = document.getElementById('user_picture_edit_img');
+
+      // Unhide image elements
+      //
+      smallImage.style.display = 'block';
+
+      // Show the captured photo
+      // The inline CSS rules are used to resize the image
+      //
+      smallImage.src = "data:image/jpeg;base64," + imageData;
+      //imageOrientation('user_picture_edit_img')
+      $('#save_picture').show();
+    }
+
+    // Called when a photo is successfully retrieved
+    //
+    function onPhotoURISuccess(imageURI) {
+      // Uncomment to view the image file URI
+      // console.log(imageURI);
+
+      // Get image handle
+      //
+      var largeImage = document.getElementById('user_picture_edit_img');
+
+      // Unhide image elements
+      //
+      largeImage.style.display = 'block';
+
+      // Show the captured photo
+      // The inline CSS rules are used to resize the image
+      //
+      largeImage.src = imageURI;
+      //imageOrientation('user_picture_edit_img')
+
+      $('#save_picture').show();
+    }
+
+    // A button will call this function
+    //
+    function capturePhoto() {
+      // Take picture using device camera and retrieve image as base64-encoded string
+      navigator.camera.getPicture(onPhotoDataSuccess, onFail, { quality: 50,
+        destinationType: destinationType.DATA_URL });
+    }
+
+    // A button will call this function
+    //
+    function capturePhotoEdit() {
+      // Take picture using device camera, allow edit, and retrieve image as base64-encoded string
+      navigator.camera.getPicture(onPhotoDataSuccess, onFail, { quality: 20, allowEdit: true,
+        destinationType: destinationType.DATA_URL });
+    }
+
+    // A button will call this function
+    //
+    function getPhoto(source) {
+      // Retrieve image file location from specified source
+      navigator.camera.getPicture(onPhotoURISuccess, onFail, { quality: 50,
+        destinationType: destinationType.FILE_URI,
+        sourceType: source });
+    }
+
+    // Called if something bad happens.
+    //
+    function onFail(message) {
+      //alert('Failed because: ' + message);
+    }
+
+    function upload() {
+        var img = document.getElementById('user_picture_edit_img');
+        var imageURI = img.src;
+        var options = new FileUploadOptions();
+        options.fileKey = "file";
+        options.fileName = imageURI.substr(imageURI.lastIndexOf('/') + 1)+'.jpg';
+        options.mimeType = "image/jpeg";
+        var params = new Object();
+        options.params = params;
+        options.chunkedMode = false;
+        var ft = new FileTransfer();
+        ft.upload(imageURI, localStorage.getItem("upload_url"), win, fail,
+            options);
+    }
+     
+    function win(r) {
+
+		if(r.responseCode == '200') {
+       		localStorage.setItem("avatar_url", r.response);
+       		window.location = $('#header').data('url');
+		}
+
+    }
+     
+    function fail(error) {
+        //alert("An error has occurred: Code = " + error.code);
+        //alert("upload error source " + error.source);
+        //alert("upload error target " + error.target);
+    }
+        
+
+    $(function() {
+
+    	$('#user_picture_edit').html('<img id="user_picture_edit_img" onload="imageOrientation(\'user_picture_edit_img\')" src="'+localStorage.getItem("avatar_url")+'" />');
+    	$('#header').data('url',RequestQueryString("opener") + '?l='+ RequestQueryString("l"));
+        $(document).on('click','#save_picture', function() {
+        	upload();
+        	$('#loading').show();
+
+        });
+
+        $('#choose_picture').html(jsonLang.LABEL_CHOOSE_PICTURE);
+        $('#save_picture').html(jsonLang.LABEL_SAVE_PICTURE);
+    });
+
+    </script>
+  </head>
+  <body>
+  <div id="header" class="goback" data-url="">
+<img id="logo" src="css/img/picto-logo-auction-z.png" />
+</div>
+<h1>Edit picture</h1>
+<div id="conteneur">
+<div id="div_create_account">
+<button id="choose_picture" onclick="getPhoto(pictureSource.PHOTOLIBRARY);">Choose a picture</button>
+    <div id="user_picture_edit" onclick="getPhoto(pictureSource.PHOTOLIBRARY);">
+    </div>
+    <div id="filesInfo"></div>
+    
+    <button id="save_picture">Save picture</button>
+    </div>
+    </div>
+    <div id="loading"></div>
+  </body>
+</html>

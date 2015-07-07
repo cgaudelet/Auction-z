@@ -1,0 +1,368 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Auction-Z - Lots list</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+		<meta charset="UTF-8">
+		<link href="css/reset.css" rel="stylesheet" />
+		<link href="scripts/toggles/css/toggles.css" rel="stylesheet" />
+		<link href="scripts/toggles/css/themes/toggles-modern.css" rel="stylesheet" />
+		<link href="css/auction-z.css" rel="stylesheet" />
+		<link href="scripts/jquery/jquery-ui-aec.css" rel="stylesheet" />
+		<script type="text/javascript" charset="utf-8" src="cordova.js"></script>
+		<script src="scripts/jquery/jquery-1.7.1.js"></script>
+		<script src="scripts/jquery/jquery-ui-1.8.17.min.js"></script>
+		<script src="scripts/jquery/moment-with-locales.js"></script>
+		<script src="scripts/toggles/js/toggles.min.js"></script>
+		<script src="scripts/default.js"></script>
+		<script type="text/javascript" src="scripts/PushNotification.js"></script>
+
+<script type="text/javascript" charset="utf-8">
+ document.addEventListener('deviceready', init_push, false);
+ 
+    /*function loadLot(lot_id) {
+        window.location = 'lot.html?l=' + lot_id;
+    }*/
+$(function() {
+	
+     if(localStorage.getItem('firstname') == '' || localStorage.getItem('firstname') == null) {
+    	window.location = 'login.html';
+    }
+    else {
+    	document.addEventListener('deviceready', init_push, false);
+	}
+    
+	//LABELS
+	$("h1").html(jsonLang.LABEL_LOT_LIST);
+	$("#filter_date").html(jsonLang.LABEL_DATE);
+	$("#filter_price").html(jsonLang.LABEL_PRICE);
+	$("#filter_date_all").html(jsonLang.LABEL_ALL);
+	$("#filter_date_current").html(jsonLang.LABEL_CURRENT);
+	$("#filter_date_future").html(jsonLang.LABEL_FUTURE);
+	$("#filter_date_past").html(jsonLang.LABEL_PAST);
+	$("#tbSearch").attr("placeholder", jsonLang.LABEL_SEARCH);
+  
+
+    //moment.locale(localStorage.getItem("language"));
+	moment.locale('en');
+	/* Liste des lots */
+	if (localStorage.getItem("filter") == null)
+	{
+		localStorage.setItem("filter", "DATE_ALL");
+	}
+
+	if (localStorage.getItem("order") == null)
+	{
+		localStorage.setItem("order","PRICE_DESCRECENT");
+	}
+	if (localStorage.getItem("search") == null)
+	{
+    	localStorage.setItem("search","");
+	}
+
+  $(document).on("click",".lot",function() {
+    window.location = 'lot.html?l=' + $(this).data('id');
+    
+  });
+  
+  /* Buttons Follow */
+  $(document).off("click",".toggle");
+  $(document).on("click",".toggle", function (e, active)
+  {
+		e.stopPropagation();
+        var xmlFollow = xmlHeader + '<follow lot_id="' + $(this).parent().data('id') + '" />' + xmlFooter;
+    	$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlFollow }, xhrFields: { withCredentials: true } }).done(function (result){
+            if ($(result).find("follow").attr("status") == "success") {
+                ShowMessageBox("success", $(result).find("message").text());
+            }
+            else
+            {
+                ShowMessageBox("error", $(result).find("message").text());
+            }
+        });
+  });
+
+  loadLots = function() {
+  
+	var xmlLots = xmlHeader + '<lots filter="' + localStorage.getItem("filter") + '" order="' + localStorage.getItem("order") + '" search="' + localStorage.getItem("search") + '" />' + xmlFooter;
+	$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlLots }, xhrFields: { withCredentials: true } }).done(function (result)
+	{
+		if ($(result).find("message").text() != "You must logging")
+		{
+			
+            $("#lots").html('');
+            var nbLot = $(result).find("lot").length;
+			if (nbLot == 0)
+			{
+				$("#lots").append(jsonLang.LABEL_NO_RESULT);
+			}
+
+            
+			$($.parseXML(result)).find("lot").each(function (indexLot)
+			{
+				lot = '<div id="lot_'+ $(this).attr("lot_id") +'" class="lot display_' + localStorage.getItem("language") +'" data-id="'+ $(this).attr("lot_id") +'"';
+
+				if ($(this).attr("background_color") != "")
+				{
+					lot += ' style="background-color: ' + $(this).attr("background_color") + ';"';
+				}
+				lot += '>';
+				lot += '<div class="image" >';
+							
+				if ($(this).find("photos").find("photo_default_url").text() != "")
+				{
+					lot += '<img src="' + $(this).find("photos").find("photo_default_url").text() + '" />';
+				}
+				else
+				{
+					lot += '<img src="css/img/none.png" />';
+				}
+
+				lot += '<img class="category" src="' + $(this).find("category").attr("img-url") + '" />';
+				lot += '<img class="family" src="' + $(this).find("family").attr("img-url") + '" />';
+				lot += '</div>';
+
+				lot += '<h2 style="color:'+ $(this).find("label").attr("color") +'">';
+				lot += $(this).find("label").text().replace('"', '').replace('"', '');
+				lot += '</h2>';
+				//les dates
+				var startDate = moment($(this).find("start_date").text());
+				var endDate = moment($(this).find("end_date").text());
+				lot += '<h3>' + startDate.format("MMM D YYYY") + '&nbsp;&gt;&nbsp;' + endDate.format("MMM D YYYY") + '</h3>';
+								
+								
+				var currencyChangeActuelle = 0;
+				var currencyChangeTable = $(this).find("currency_change").text().split(';');
+				for (var i = 0; i < currencyChangeTable.length; i++)
+				{
+					if (currencyChangeTable[i].substring(0, 3) == localStorage.getItem("currency_user"))
+					{
+						currencyChangeActuelle = currencyChangeTable[i].replace(localStorage.getItem("currency_user") + ":", "")
+					}
+				}
+
+				if ($(this).find("highest_bid").find("current_bid").text() != "")
+				{
+				    current_bid = $(this).find("highest_bid").find("current_bid").text() * currencyChangeActuelle;
+					lot += '<h4>' + formatNumber(current_bid);
+					lot += ' ' + localStorage.getItem("currency_user") + '</h4>';
+				}
+				else
+				{
+					lot += '<h4>' +$(this).find("current_bid").text() * currencyChangeActuelle;
+					lot += ' ' + localStorage.getItem("currency_user") + '</h4>';
+				}
+
+
+				
+
+                //on ajoute le follow
+                lot += '<div class="follow_lots toggle toggle-modern" data-toggle-on="' +((($(this).attr("followed") == "1"))?'true':'false') +'"></div>';
+				//on ferme la div
+				lot += '</div>';
+							
+
+
+				$("#lots").append(lot);
+
+				
+			});
+			
+			$('.toggle').toggles({
+                text: {
+                    on: jsonLang.LABEL_FOLLOWED, // text for the ON position
+                    off: jsonLang.LABEL_UNFOLLOWED // and off
+                }
+            });
+
+		}
+		else
+		{
+			var xmlLogin = xmlHeader + '<login email="' + localStorage.getItem("email") + '" password="' + localStorage.getItem("key") + '" md5="true" />' + xmlFooter;
+			$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlLogin }, xhrFields: { withCredentials: true } }).done(function (result)
+			{
+				if ($(result).find("login").attr("status") == "success")
+				{
+					loadLots();
+				}
+				else
+				{
+					window.location.href = "login.html";
+				}
+			});
+		}
+
+		//$('#result').html(result);
+	}).fail(function(jqXHR, textStatus, errorThrown){
+    	console.log(textStatus);
+        ShowMessageBox('alert',jsonLang.LABEL_NO_CONNECTION)
+    });
+
+
+	}	
+
+    
+   /* Initialisations Boutons Filtres */
+	if (localStorage.getItem("filter") == "DATE_ALL")
+	{
+        $("#filter_date_all").addClass('selected');
+        $("#filters_date").hide();
+	}
+	else if (localStorage.getItem("filter") == "DATE_CURRENT")
+	{
+		$("#filter_date").addClass('selected');
+		$("#filters_date").show();
+		$("#filter_date_current").addClass('selected');
+	}
+	else if (localStorage.getItem("filter") == "DATE_FUTURE")
+	{
+		$("#filter_date").addClass('selected');
+		$("#filters_date").show();
+		$("#filter_date_future").addClass('selected');
+	}
+	else if (localStorage.getItem("filter") == "DATE_PAST")
+	{
+		$("#filter_date").addClass('selected');
+		$("#filters_date").show();
+		$("#filter_date_past").addClass('selected');
+	}
+
+	if (localStorage.getItem("order") == "PRICE_CRESCENT")
+	{
+		$("#filter_price").addClass('asc');
+	}
+	else
+	{
+		$("#filter_price").addClass('desc');
+	}
+
+	if (localStorage.getItem("search") != "")
+	{
+		$("#filter_date").removeClass('selected');
+        $("#filter_search").addClass('selected');
+		$('#tbSearch').val(localStorage.getItem("search"));
+	}
+
+
+	/* Level 1 */
+	$("#filter_date").click(function ()
+	{
+		$("#filters_date").toggle();
+        $("#filter_date").toggleClass('selected');
+        $("#filter_search").removeClass('selected');
+		$("#tbSearch").hide();
+	});
+    
+	$("#filter_price").click(function ()
+	{
+		$("#filter_price").removeClass('asc');
+        $("#filter_price").removeClass('desc');
+        
+        if (localStorage.getItem("order") == "PRICE_CRESCENT")
+		{
+			localStorage.setItem("order", "PRICE_DESCRECENT");
+            $("#filter_price").addClass('desc');
+		}
+		else
+		{
+			localStorage.setItem("order", "PRICE_CRESCENT");
+            $("#filter_price").addClass('asc');
+		}
+		loadLots();
+	});
+	$("#filter_search").click(function ()
+	{
+		$("#tbSearch").toggle();
+        $("#filter_date").removeClass('selected');
+        $("#filter_search").toggleClass('selected');
+		$("#filters_date").hide();
+	});
+
+	/* Level 2 Dates */
+	$("#filter_date_all").click(function ()
+	{
+    	$("#filters_date").children().removeClass('selected');
+        $("#filter_date_all").addClass('selected');
+		localStorage.setItem("filter", "DATE_ALL");
+		loadLots();
+	});
+	$("#filter_date_current").click(function ()
+	{
+		$("#filters_date").children().removeClass('selected');
+        $("#filter_date_current").addClass('selected');
+        localStorage.setItem("filter", "DATE_CURRENT");
+		loadLots();
+	});
+	$("#filter_date_future").click(function ()
+	{
+		$("#filters_date").children().removeClass('selected');
+        $("#filter_date_future").addClass('selected');
+        localStorage.setItem("filter", "DATE_FUTURE");
+		loadLots();
+	});
+	$("#filter_date_past").click(function ()
+	{
+		$("#filters_date").children().removeClass('selected');
+        $("#filter_date_past").addClass('selected');
+        localStorage.setItem("filter", "DATE_PAST");
+		loadLots();
+	});
+
+	/* Level 2 Search */
+	$("#tbSearch").change(function ()
+	{
+		localStorage.setItem("search", $('#tbSearch').val());
+		loadLots();
+	});
+
+	$('#menu').load('menu.html');
+    
+    var intervalNotifs = setInterval(loadPushNotifs, 5000);	 
+    var intervalLots = setInterval(loadLots, 5000);	 
+   
+  
+  	loadPushNotifs();
+    loadLots();
+
+	
+});
+</script>
+</head>
+<body  id="iOS">
+<div id="header">
+<img id="logo" src="css/img/picto-logo-auction-z.png" />
+<div id="notif_counter"></div>
+<div id="notifs"><div id="notifs_title"></div>
+<div id="notifs_list"></div>
+</div>
+<div id="bt_menu" data-open="0"></div>
+<div id="menu"></div>
+</div>
+<h1></h1>
+<div id="conteneur">
+<div id="lots_filters">
+<ul>
+<li id="filter_date">
+<span></span>
+</li>
+<li id="filter_price"><span></span></li>
+<li id="filter_search"><span></span></li>
+</ul>
+
+<ul id="filters_date">
+<li id="filter_date_all"><span></span></li>
+<li id="filter_date_current"><span></span></li>
+<li id="filter_date_future"><span></span></li>
+<li id="filter_date_past"><span></span></li>
+</ul>
+<form>
+<input id="tbSearch" type="search" class="inputs" />
+</form>
+</div>
+<div id="lots">
+<!-- les lots sont chargés ici -->
+</div>
+<div id="messageBox"></div>
+
+</body>
+</html>

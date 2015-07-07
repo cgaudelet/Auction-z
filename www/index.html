@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Auction-Z</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+		<link href="css/reset.css" rel="stylesheet" />
+		<link href="css/auction-z.css" rel="stylesheet" />
+		<link href="scripts/jquery/jquery-ui-aec.css" rel="stylesheet" />
+		<script src="scripts/jquery/jquery-1.7.1.js"></script>
+		<script src="scripts/jquery/jquery-ui-1.8.17.min.js"></script>
+		<script src="scripts/md5/md5.min.js"></script>
+        <script type="text/javascript" charset="utf-8" src="cordova.js"></script>
+		<script src="scripts/default.js"></script>
+
+<script>
+$(function() {
+
+	/* Initialisation Login */
+	if (localStorage.getItem("email") != "") {
+		$('#tbLogin').val(localStorage.getItem("email"));
+	}
+	
+	
+	//si on a une session active on redirige vers la page des lots
+	if(localStorage.getItem("email") != '' && localStorage.getItem("key") != '') {
+	    var xmlLogin = xmlHeader + '<login email="' + localStorage.getItem("email") + '" password="' + localStorage.getItem("key") + '" md5="true" />' + xmlFooter;
+			$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlLogin }, xhrFields: { withCredentials: true } }).done(function (result)
+			{
+				if ($(result).find("login").attr("status") == "success")
+				{
+    				window.location.href = "lots.html";
+				}
+				else
+				{
+					//
+				}
+			});
+	}
+	
+	
+
+	$(document).on(
+			'click',
+			'#btnSignIn',
+			function() {
+                   
+				$('#loading').show();
+                   
+				var xmlLogin = xmlHeader + '<login email="'
+						+ $('#tbLogin').val() + '" password="'
+						+ md5($('#tbPassword').val()) + '" md5="true" />'
+						+ xmlFooter;
+				$.ajax( {
+					type : "POST",
+					url : webServiceUrl,
+					data : {
+						xml : xmlLogin
+					},
+					xhrFields : {
+						withCredentials : true
+					}
+				}).done(function(result) {
+					if ($(result).find("login").attr("status") == "success") {
+						// localStorage.clear();
+						// localStorage.setItem("user_id",
+						// $(result).find("user_id").text());
+						// localStorage.setItem("user_token",
+						// $(result).find("user_token").text());
+						localStorage.setItem("email", $(result).find("email")
+								.text());
+						localStorage.setItem("firstname", $(result).find(
+								"firstname").text());
+						localStorage.setItem("lastname", $(result).find(
+								"lastname").text());
+						localStorage.setItem("country_code", $(result).find(
+								"country_code").text());
+						localStorage.setItem("id_country", $(result).find(
+								"country_code").attr('id'));
+								
+						localStorage.setItem("city", $(result).find("city")
+								.text());
+						localStorage.setItem("avatar_url", $(result).find(
+								"avatar_url").text());
+						localStorage.setItem("can_bid", $(result).find(
+								"can_bid").text());
+						localStorage.setItem("access", $(result).find("access")
+								.text());
+						localStorage.setItem("agreed", $(result).find("agreed")
+								.text());
+						localStorage.setItem("currency_user", $(result).find(
+								"currency_user").text());
+						localStorage
+								.setItem("key", md5($('#tbPassword').val()));
+						localStorage.setItem("language", $(result).find(
+								"language").text());
+                        
+                        localStorage.setItem("mobilephonenumber", $(result).find(
+								"mobilephonenumber").text());								
+								
+                        localStorage.setItem("upload_url", $(result).find("upload_url").text());		
+								
+						$.ajax( {
+							url : $(result).find('language[code="EN"]').attr(
+									"url"),
+							dataType : 'JSON',
+							success : function(data) {
+								localStorage.setItem("labelsen", JSON
+										.stringify(data));
+							},
+							error : function() {
+								ShowMessageBox("error", "Error in lang en");
+							}
+						});
+						
+						$.ajax( {
+							url : $(result).find('language[code="AR"]').attr(
+									"url"),
+							dataType : 'JSON',
+							success : function(data) {
+								localStorage.setItem("labelsar", JSON
+										.stringify(data));
+								window.location.href = "lots.html";
+							},
+							error : function() {
+								ShowMessageBox("error", "Error in lang ar");
+							}
+						});
+					} else {
+						ShowMessageBox("error", $(result).find("message")
+								.text());
+						$('#loading').hide();
+					}
+
+				});
+			});
+	
+	$(document).on('click','#bt_goto_create_account',function(){
+		window.location.href = "create_account.html";
+	});
+	
+	$(document).on('click','#aForgotPassword',function(){
+		$('#dialog').load('forgot_password.html',function(){
+			   $(this).dialog({
+			       title: "Forgot password",
+			       width:'90%',
+			       height:150,
+			       draggable:false,
+			       resizable:false,
+			       modal:true,
+               show: { effect: "slide",direction:"up", duration: 800 },
+               hide: { effect: "slide",direction:"up", duration: 800 },
+             }); 
+			});
+	});
+});
+		    
+</script>
+</head>
+<body>
+<div id="conteneur">
+<img id="logo" src="css/img/picto-auction-z-grand.png" alt="" />
+		<div id="login_block">
+			<input id="tbLogin" type="email" placeholder="Login" class="inputs"  />
+			<input id="tbPassword" type="password" placeholder="Password" class="inputs" />
+			<button id="btnSignIn">Sign in</button>
+			<a id="aForgotPassword">Forgot password ?</a>
+		</div>
+		<button id="bt_goto_create_account">Create account</button>
+</div>
+<div id="messageBox"></div>
+<div id="dialog"></div>
+<div id="loading"></div>
+</body>
+</html>

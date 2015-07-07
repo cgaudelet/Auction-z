@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:gap="http://phonegap.com/ns/1.0" xmlns:android="http://schemas.android.com/apk/res/android" id="com.auction-z.pushApp" version="1.0.0">
+	<name>Auction-Z</name>
+	<description>
+		Application mobile de vente aux enchères
+	</description>
+	<author email="contact@auction-z.com" href="http://preprod.auction-z.com">
+		Auction-Z
+	</author>
+	<access origin="*" />
+	<gap:plugin name="org.apache.cordova.inappbrowser" />
+	<preference name="orientation" value="portrait" />
+	<preference name="permissions" value="none"/>
+    <preference name="DisallowOverscroll" value="true" />
+	<icon src="icon.png" />
+</widget>

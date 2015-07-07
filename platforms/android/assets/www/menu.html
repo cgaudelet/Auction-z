@@ -1,0 +1,143 @@
+<script>
+
+
+    $(function(){
+        
+        $(document).on('click','#user_picture',function(){
+
+            window.location = 'edit-picture.html?opener=' +  $(location).attr('pathname') + $(location).attr('search');
+        });
+
+        
+    
+        $("#btnChangeInformation").html(jsonLang.LABEL_ASK_CHANGE_INFO);
+        $("#logout").html(jsonLang.LABEL_LOGOUT);
+        $("#btnChangeLanguage").html(jsonLang.LABEL_SWITCH_LANG);
+        
+        $('#user_picture').html('<img id="user_picture_img" onload="imageOrientation(\'user_picture_img\')" src="'+localStorage.getItem("avatar_url")+'" />');
+        
+        /* Name and country */
+        $("#member_name").html(localStorage.getItem("firstname") + " " + localStorage.getItem("lastname") + " <br />" + localStorage.getItem("country_code") + ", " + localStorage.getItem("city"));
+    
+        $('#currency_'+localStorage.getItem("currency_user")).addClass('selected');
+        
+        /* Sign Out */
+        $("#logout").click(function ()
+        {
+        	var xmlLogout = xmlHeader + '<logout />' + xmlFooter;
+        	$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlLogout }, xhrFields: { withCredentials: true } }).done(function (result)
+        	{
+        		if ($(result).find("logout").attr("status") == "success")
+        		{
+        			localStorage.removeItem("firstname");
+        			localStorage.removeItem("lastname");
+        			localStorage.removeItem("country_code");
+        			localStorage.removeItem("city");
+        			localStorage.removeItem("avatar_url");
+        			localStorage.removeItem("can_bid");
+        			localStorage.removeItem("access");
+        			localStorage.removeItem("agreed");
+        			localStorage.removeItem("currency_user");
+        			localStorage.removeItem("key");
+        			window.location.href = "index.html";
+        		}
+        		else
+        		{
+        			ShowMessageBox("error", $(result).find("hidden").text());
+        		}
+        		//$('#result').html(result);
+        	});
+        });
+        
+    
+        $(document).on('click','.currency',function(){
+            
+            currency = $(this).data('id');
+            
+            var xmlCurrency = xmlHeader + '<modify_account><language>' + localStorage.getItem("language") + '</language><currency>' + currency + '</currency></modify_account>' + xmlFooter;
+        	$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlCurrency }, xhrFields: { withCredentials: true } }).done(function (result)
+        	{
+        		if ($(result).find("modify_account").attr("status") == "success")
+        		{
+        			localStorage.setItem("currency_user", currency);
+        			location.reload();
+        		}
+        		else
+        		{
+        			ShowMessageBox("error", $(result).find("message").text());
+        		}
+        		//$('#result').html(result);
+        	});
+        });
+    
+        $(document).on('click','#btnChangeInformation',function(){
+            	window.location.href = "edit_account.html?opener=" +  $(location).attr('pathname') + $(location).attr('search');
+            	
+        });
+        
+        /* Change Current language */
+        $(document).on('click','#btnChangeLanguage',function ()
+        {
+        	var language = localStorage.getItem("language") == "en" ? "ar" : "en";
+        	var xmlCurrency = xmlHeader + '<modify_account><language>' + language + '</language><currency>' + localStorage.getItem("currency_user") + '</currency></modify_account>' + xmlFooter;
+        	$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlCurrency }, xhrFields: { withCredentials: true } }).done(function (result)
+        	{
+        		if ($(result).find("modify_account").attr("status") == "success")
+        		{
+        			localStorage.setItem("language", language);
+        			location.reload();
+        		}
+        		else
+        		{
+        			ShowMessageBox("error", $(result).find("message").text());
+        		}
+        		//$('#result').html(result);
+        	});
+        });
+    });
+
+    $(document).on('click','#bt_notif', function() {
+
+    	//alert('before :' + localStorage.getItem('deviceID'));
+    	my_url = encodeURI('http://preprod.auction-z.com/test-gcm.php?id='+localStorage.getItem('deviceID'));
+    	//alert(my_url);
+
+    	/*$.ajax({ type: "GET", url: my_url, data: { id: localStorage.getItem('deviceID')}, xhrFields: { withCredentials: true } }).done(function (result) {
+        	alert(result);
+        }).fail(function(e,textStatus, errorThrown) {
+        		    alert( "error : " + errorThrown );
+        		  });;
+    	
+    	*/
+    	$.get(my_url, function( data ) {
+  		  //alert( data );
+		  //alert( "Load was performed." );
+		}).fail(function(e,textStatus, errorThrown) {
+		    //alert( "error : " + errorThrown );
+		  });
+   
+    });
+    
+</script>
+
+<div id="menu_container">
+<div id="member_info">
+    <div id="user_picture"></div>
+    <div id="member_name"></div>
+</div>
+<div id="currencies">
+    <div id="currency_USD" class="currency" data-id="USD">USD</div>
+    <div id="currency_AED" class="currency" data-id="AED">AED</div>
+    <div id="currency_SAR" class="currency" data-id="SAR">SAR</div>
+    <div id="currency_BHD" class="currency" data-id="BHD">BHD</div>
+    <div id="currency_KWD" class="currency" data-id="KWD">KWD</div>
+    <div id="currency_OMR" class="currency" data-id="OMR">OMR</div>
+    <div id="currency_QAR" class="currency" data-id="QAR">QAR</div>
+    <div>&nbsp;</div>
+</div>
+    <button id="btnChangeInformation">Change my information</button>
+    <button id="logout">Logout</button>
+    <button id="btnChangeLanguage"></button>
+</div>
+
+<div id="dialog"></div>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Auction-Z - create account</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+		<meta charset="UTF-8">
+		<link href="css/reset.css" rel="stylesheet" />
+		<link href="css/auction-z.css" rel="stylesheet" />
+		<link href="scripts/itn/css/intlTelInput.css" rel="stylesheet" />
+		<script src="scripts/jquery/jquery-2.1.0.min.js"></script>
+		<script src="scripts/itn/js/intlTelInput.min.js"></script>
+        <script type="text/javascript" charset="utf-8" src="cordova.js"></script>
+		<script src="scripts/default.js"></script>
+<script>
+$(function() {
+       $("#tbMobileNumber").intlTelInput(
+	{
+		utilsScript: "scripts/itn/js/utils.js",
+		//preferredCountries: ["fr"],
+		nationalMode: false
+	});
+	
+	$(document).on('click',"#bt_create_account",function ()
+			{
+				var xmlCreateAccount = "";
+				xmlCreateAccount += xmlHeader;
+				xmlCreateAccount += '<create_account email="' + $('#tbEmailCreateAccount').val() + '">';
+				xmlCreateAccount += '<nickname>toto</nickname>';
+				xmlCreateAccount += '<first_name>' + $('#tbFirstName').val() + '</first_name>';
+				xmlCreateAccount += '<last_name>' + $('#tbLastName').val() + '</last_name>';
+				xmlCreateAccount += '<country>' + $('#ddlCountry').val() + '</country>';
+				xmlCreateAccount += '<city>' + $('#tbCity').val() + '</city>';
+				xmlCreateAccount += '<mobilephonenumber>' + $('#tbMobileNumber').val() + '</mobilephonenumber>';
+				xmlCreateAccount += '<language>en</language>';
+				xmlCreateAccount += '</create_account>';
+				xmlCreateAccount += xmlFooter;
+				$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlCreateAccount }, xhrFields: { withCredentials: true } }).done(function (result)
+				{
+					if ($(result).find("create_account").attr("status") == "success")
+					{
+						ShowMessageBox("success", $(result).find("message").text());
+					}
+					else
+					{
+						ShowMessageBox("error", $(result).find("message").text());
+					}
+					//$('#result').html(result);
+				});
+	}); 
+});
+    
+</script>
+	</head>
+<body>
+<div id="header" class="goback" data-url="login.html">
+<img id="logo" src="css/img/picto-logo-auction-z.png" />
+</div>
+<h1>Sign Up</h1>
+<div id="conteneur">
+<div id="div_create_account">
+	<input id="tbFirstName" type="text" placeholder="First name" class="inputs" />
+	<input id="tbLastName" type="text" placeholder="Last name" class="inputs" />
+	<input id="tbEmailCreateAccount" type="email" placeholder="Email" class="inputs" />
+	<select id="ddlCountry" class="inputs" >
+	<option value="">Country</option>
+    <option value="1" >Afghanistan</option><option value="2" >Albania</option><option value="3" >Algeria</option><option value="4" >Andorra</option><option value="5" >Angola</option><option value="6" >Antigua and Barbuda</option><option value="7" >Argentina</option><option value="8" >Armenia</option><option value="9" >Australia</option><option value="10" >Austria</option><option value="11" >Azerbaijan</option><option value="12" >Bahamas</option><option value="13" >Bahrain</option><option value="14" >Bangladesh</option><option value="15" >Barbados</option><option value="16" >Belarus</option><option value="17" >Belgium</option><option value="18" >Benin</option><option value="19" >Bolivia</option><option value="20" >Bosnia and Herzegovina</option><option value="21" >Botswana</option><option value="22" >Brazil</option><option value="23" >Bulgaria</option><option value="24" >Burkina Faso</option><option value="25" >Cambodia</option><option value="26" >Cameroon</option><option value="27" >Canada</option><option value="28" >Cape Verde</option><option value="29" >Cayman Islands</option><option value="30" >Chile</option><option value="31" >China</option><option value="32" >Colombia</option><option value="33" >Comoros</option><option value="34" >Congo</option><option value="35" >Costa Rica</option><option value="36" >Croatia</option><option value="37" >Cuba</option><option value="38" >Czech Republic</option><option value="39" >Denmark</option><option value="40" >Djibouti</option><option value="41" >Dominican Republic</option><option value="42" >Ecuador</option><option value="43" >Egypt</option><option value="44" >England</option><option value="45" >Equatorial Guinea</option><option value="46" >Estonia</option><option value="47" >Ethiopia</option><option value="48" >Fiji</option><option value="49" >Finland</option><option value="50" >France</option><option value="51" >French Guiana</option><option value="52" >French Polynesia</option><option value="53" >Gabon</option><option value="54" >Gambia</option><option value="55" >Georgia</option><option value="56" >Germany</option><option value="57" >Ghana</option><option value="58" >Greece</option><option value="59" >Grenada</option><option value="60" >Guadeloupe</option><option value="61" >Guatemala</option><option value="62" >Guinea</option><option value="63" >Guyana</option><option value="64" >Haiti</option><option value="65" >Honduras</option><option value="66" >Hong Kong</option><option value="67" >Hungary</option><option value="68" >Iceland</option><option value="69" >India</option><option value="70" >Indonesia</option><option value="71" >Iran</option><option value="72" >Iraq</option><option value="73" >Ireland</option><option value="74" >Israel</option><option value="75" >Italy</option><option value="76" >Ivory Coast</option><option value="77" >Jamaica</option><option value="78" >Japan</option><option value="79" >Jordan</option><option value="80" >Kenya</option><option value="81" >Korea</option><option value="82" >Kuwait</option><option value="83" >Laos</option><option value="84" >Liberia</option><option value="85" >Libya</option><option value="86" >Liechtenstein</option><option value="87" >Lithuania</option><option value="88" >Luxembourg</option><option value="89" >Macao</option><option value="90" >Madagascar</option><option value="91" >Maldives</option><option value="92" >Mali</option><option value="93" >Martinique</option><option value="94" >Mauritius</option><option value="95" >Mayotte</option><option value="96" >Mexico</option><option value="97" >Micronesia</option><option value="98" >Monaco</option><option value="99" >Montenegro</option><option value="100" >Morocco</option><option value="101" >Namibia</option><option value="102" >Nepal</option><option value="103" >Netherlands</option><option value="104" >Netherlands Antilles</option><option value="105" >New Caledonia</option><option value="106" >New Zealand</option><option value="107" >Nicaragua</option><option value="108" >Nigeria</option><option value="109" >Norway</option><option value="110" >Oman</option><option value="111" >Pakistan</option><option value="112" >Panama</option><option value="113" >Paraguay</option><option value="114" >Peru</option><option value="115" >Philippines</option><option value="116" >Poland</option><option value="117" >Portugal</option><option value="118" >Qatar</option><option value="119" >Réunion</option><option value="120" >Romania</option><option value="121" >Russia</option><option value="122" >Rwanda</option><option value="123" >Saint Lucia</option><option value="124" >Saint Vincent and the Grenadines</option><option value="125" >Samoa</option><option value="126" >San Marino</option><option value="127" >Saudi Arabia</option><option value="128" >Scotland</option><option value="129" >Senegal</option><option value="130" >Serbia</option><option value="131" >Seychelles</option><option value="132" >Sierra Leone</option><option value="133" >Singapore</option><option value="134" >Slovakia</option><option value="135" >Slovenia</option><option value="136" >Somalia</option><option value="137" >South Africa</option><option value="138" >Spain</option><option value="139" >Sri Lanka</option><option value="140" >Suriname</option><option value="141" >Sweden</option><option value="142" >Switzerland</option><option value="143" >Syria</option><option value="144" >Taiwan</option><option value="145" >Tanzania</option><option value="146" >Thailand</option><option value="147" >Togo</option><option value="148" >Tonga</option><option value="149" >Trinidad and Tobago</option><option value="150" >Tunisia</option><option value="151" >Turkey</option><option value="152" >Ukraine</option><option value="153" >United Arab Emirates</option><option value="154" >United States of America</option><option value="155" >Uruguay</option><option value="156" >Vatican</option><option value="157" >Venezuela</option><option value="158" >Vietnam</option><option value="159" >Wales</option>    </select>
+	</select>
+	<input id="tbCity" type="text" placeholder="City" class="inputs" />
+	<input id="tbMobileNumber" type="tel" class="inputs" />
+	<div id="create_account_phrase">
+		Complete this form and click 'Send my request'. You will be contacted by our staff to validate your login and password.
+	</div>
+</div>
+<button id="bt_create_account">Send my request</button>
+</div>			
+<div id="messageBox"></div>
+</body>
+</html>

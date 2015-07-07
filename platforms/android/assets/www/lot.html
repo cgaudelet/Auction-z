@@ -1,0 +1,314 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Auction-Z</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+		<meta charset="UTF-8">
+		<link href="css/reset.css" rel="stylesheet" />
+		<link href="scripts/swipper/css/swiper.min.css" rel="stylesheet" />
+		<link href="scripts/jquery/jquery-ui-aec.css" rel="stylesheet" />
+		<link href="scripts/toggles/css/toggles.css" rel="stylesheet" />
+		<link href="scripts/toggles/css/themes/toggles-modern.css" rel="stylesheet" />
+		<link href="css/auction-z.css" rel="stylesheet" />
+        <script type="text/javascript" charset="utf-8" src="cordova.js"></script>
+		<script src="scripts/jquery/jquery-1.7.1.js"></script>
+		<script src="scripts/jquery/jquery-ui-1.8.17.min.js"></script>
+		<script src="scripts/swipper/js/swiper.jquery.js"></script>
+		<script src="scripts/toggles/js/toggles.min.js"></script>
+		<script src="scripts/jquery/moment-with-locales.js"></script>
+		<script src="scripts/default.js"></script>
+<script>
+$(function() {
+    
+    //moment.locale(localStorage.getItem("language"));
+	moment.locale('en');
+    $('#menu').load('menu.html');
+    lot_id = RequestQueryString("l");
+    var statusLot = '';
+    
+    var xmlLot = xmlHeader + '<lot lot_id="' + lot_id + '" />' + xmlFooter;
+    $.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlLot }, xhrFields: { withCredentials: true } }).done(function (result)
+    {
+    	if ($(result).find("message").text() != "You must logging")
+    	{
+    	    var NbSlides = 0;
+
+    		NbSlides += $(result).find("photo_url").length;
+    
+    		if ($(result).find("photo_default_url").text() != "")
+    		{
+    			NbSlides += 1;
+    		}
+
+    		if (NbSlides > 1)
+    		{
+    			var mySwiper = new Swiper('.swiper-container', { autoplay: 3000, grabCursor: true, loop: true, paginationClickable: true, pagination: '.pagination', nextButton: '.arrow-right', prevButton: '.arrow-left' });
+    			
+    			if ($(result).find("photo_default_url").text() != "")
+    			{
+    				mySwiper.appendSlide('<div class="swiper-slide"><img src="' + $(result).find("photo_default_url").text() + '" /></div>');
+    			}
+    			
+    			$(result).find("photo_url").each(function ()
+    			{
+    				mySwiper.appendSlide('<div class="swiper-slide"><img src="' + $(this).text() + '" /></div>');
+    			});
+    		
+    		}
+    		else
+    		{
+    			//$(".swiper-container").hide();
+    			$(".arrow-left").hide();
+    			$(".arrow-right").hide();
+    			$(".pagination").hide();
+    			$("#divSwiperContainer").html("<img src='" + $(result).find("photo_default_url").text() + "' />");
+    		}
+    		
+    		/* Initialisations du Titre, Family, Category, Id */
+    		$("h1").html($($.parseXML(result)).find("label").text().replace('"', '').replace('"', ''));
+    		
+    		if(undefined !== $(result).find("category")) {
+    		    $("#family_category").html('<img src="' + $(result).find("category").attr("img-url") + '" />');
+    		    
+    		}
+    		$("#family_category").append('<img src="' + $(result).find("family").attr("img-url") + '" class="family" />');
+    		$("#lot_id").html("Lot #" + lot_id);
+    		$("#description").html($($.parseXML(result)).find("description").text().replace('"', '').replace('"', ''));
+
+            if ($(result).find("description").attr("color") != "") {
+                $("#description").css('color',$(result).find("description").attr("color"));
+            }
+            
+            /* Initialisation du CurrencyChangeAcutel */
+    		var currencyChangeTable = $(result).find("currency_change").text().split(';');
+    		for (var i = 0; i < currencyChangeTable.length; i++)
+    		{
+    			if (currencyChangeTable[i].substring(0, 3) == localStorage.getItem("currency_user"))
+    			{
+    				currencyChangeActuelle = currencyChangeTable[i].replace(localStorage.getItem("currency_user") + ":", "")
+    			}
+    		}
+    		
+    		startDate = moment($($.parseXML(result)).find("start_date").text());
+			endDate = moment($($.parseXML(result)).find("end_date").text());
+			bidStep = $(result).find("bid_step").text();
+            $('#dates').html(startDate.format("MMM D YYYY") + ' &gt; ' + endDate.format("MMM D YYYY"));
+            
+            //le highest_bid est initialisé en dessous
+    	    
+    	    /* Button Follow */
+    		if ($(result).find("lot").attr("followed") == "1")
+    		{
+    			$("#follow").toggles({ on: true, text: { on: jsonLang.LABEL_FOLLOWED, off: jsonLang.LABEL_UNFOLLOWED } });
+    		}
+    		else
+    		{
+    			$("#follow").toggles({ on: false, text: { on: jsonLang.LABEL_FOLLOWED, off: jsonLang.LABEL_UNFOLLOWED } });
+    		}
+
+    	    ShowHighestBid();
+    		
+    		
+    		
+    		
+    	}
+    	else
+    	{
+    		var xmlLogin = xmlHeader + '<login email="' + localStorage.getItem("email") + '" password="' + localStorage.getItem("key") + '" md5="true" />' + xmlFooter;
+    		$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlLogin }, xhrFields: { withCredentials: true } }).done(function (result)
+    		{
+    			if ($(result).find("login").attr("status") == "success")
+    			{
+    				location.reload();
+    			}
+    			else
+    			{
+    				window.location.href = "index.html";
+    			}
+    		});
+    	}
+    });
+    
+    
+    ShowHighestBid = function ()
+    {
+    	var xmlHighestBid = xmlHeader + '<highest_bid lot_id="' + lot_id + '" />' + xmlFooter;
+    	$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlHighestBid }, xhrFields: { withCredentials: true } }).done(function (result)
+    	{
+    		if(undefined == $('#bt_bid').data('highest_bid_id') || $(result).find("highest_bid").attr("highest_bid_id") != $('#bt_bid').data('highest_bid_id')) {
+        		html = '';
+        		if ($(result).find("highest_bid").attr("highest_bid_id") != 0 )
+        		{
+        		    
+        			html += '<div id="bid_user_picture">';
+    				if ($(result).find("highest_avatar_url").text() != "")
+    				{
+    					html += '<img id="bid_user_picture_img" onload="imageOrientation(\'bid_user_picture_img\')" src="' + $(result).find("highest_avatar_url").text() + '" />';
+    				}
+    				else
+    				{
+    					html += '<img id="bid_user_picture_img" onload="imageOrientation(\'bid_user_picture_img\')" src="css/img/none.png" />';
+    				}
+    				html += '</div>';
+    
+    				html += '<div id="nickname">'+$(result).find("highest_nickname").text() + '';
+    				html += "<br />";
+    
+    				highestTime = moment($(result).find("highest_time").text());
+    				html += highestTime.format("ll");
+    				html += '<br />';
+    				html += highestTime.format("LT");
+    				html += '</div>';
+              
+        		}
+        		html += '<div id="current_bid">';
+        		
+    			html += '<span>' + formatNumber($(result).find("current_bid").text() * currencyChangeActuelle);
+    			html += " " + localStorage.getItem("currency_user") + '</span>';
+    			
+    			html += '<br />'+jsonLang.LABEL_HIGHEST_BID;
+    			html += '</div>';
+        	    $('#highest_bid').html(html);
+    
+    			/* Initialisations des Buttons Bid */
+            	statusLot = $(result).find("status").text();
+            
+            	if (localStorage.getItem("can_bid") == "true")
+            	{
+            	
+            		if (statusLot == "future")
+            		{
+            			$("#bt_bid").html(jsonLang.LABEL_COMING_SOON);
+            			$("#bt_bid").addClass('soon');
+            			
+            		}
+            		else if (statusLot == "past")
+            		{
+            			$("#bt_bid").html(jsonLang.LABEL_SOLD);
+            			$("#bt_bid").addClass('sold');
+            		}
+            		else
+            		{
+            			var currentBid = 0;
+    
+            			currentBid = $(result).find("current_bid").text();
+    
+            			amountPlusOne = parseFloat(currentBid) + parseFloat(bidStep);
+            
+            			if ($(result).find("highest_bid").text() != "")
+            			{
+            				highestBidId = $(result).find("highest_bid").attr("highest_bid_id");
+    						highestBidToken = $(result).find("highest_bid").attr("highest_bid_token");
+    						highestBidUserId = $(result).find("highest_bid").attr("highest_bid_user_id");
+    						highestBidAmount = $(result).find("highest_bid").find("current_bid").text();
+            			}
+                        $('#bt_bid').data('highestBidId',highestBidId);
+            			$("#bt_bid").html(jsonLang.LABEL_BID + " " + formatNumber(amountPlusOne * currencyChangeActuelle) + " " + localStorage.getItem("currency_user"));
+            			
+            		}
+            	}
+            	else {
+            	    $('#bt_bid').hide();
+            	}
+            	
+    			endDate = moment($($.parseXML(result)).find("end_date").text());
+                $('#dates').html(startDate.format("MMM D YYYY") + '&nbsp;&gt;&nbsp;' + endDate.format("MMM D YYYY"));
+                if (statusLot != "future" && statusLot != "past")
+        		{
+	            	remaining = endDate.fromNow(true);
+	            	remaining = remaining.replace(' ','&nbsp;');
+	            	//on affiche le time remaining
+	        		$('#time_remaining').html(jsonLang.LABEL_TIME_REIMING + '&nbsp;:&nbsp;'+remaining);
+	        		$('#time_remaining').show();
+        		}
+                else {
+                	$('#time_remaining').hide();
+                }
+    		}
+		});
+		
+    }
+    	    
+    var intervalHighestBid = setInterval(ShowHighestBid, 10000);	    
+    	
+    /* Button Follow */
+    $("#follow").on("toggle", function (e, active)
+    {
+    	var xmlFollow = xmlHeader + '<follow lot_id="' + RequestQueryString("l") + '" />' + xmlFooter;
+    	$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlFollow }, xhrFields: { withCredentials: true } }).done(function (result)
+    	{
+    		if ($(result).find("follow").attr("status") == "success")
+    		{
+    			ShowMessageBox("success", $(result).find("message").text());
+    		}
+    		else
+    		{
+    			ShowMessageBox("error", $(result).find("message").text());
+    		}
+         });
+    });
+        
+        
+        
+    
+    /* Buttons Bid */
+    $(document).on('click','#bt_bid',function ()
+    {
+        console.log(statusLot);
+    	if (statusLot == "current")
+    	{
+    		xmlBid = xmlHeader + '<bid lot_id="' + lot_id + '" amount="' + amountPlusOne + '" highest_bid_id="' + highestBidId + '" highest_bid_token="' + highestBidToken + '" highest_bid_user_id="' + highestBidUserId + '"  highest_bid_amount="' + highestBidAmount + '" />' + xmlFooter;
+    		$.ajax({ type: "POST", url: webServiceUrl, data: { xml: xmlBid }, xhrFields: { withCredentials: true } }).done(function (result)
+    		{
+    			if ($(result).find("bid").attr("status") == "success")
+    			{
+    				ShowHighestBid();
+    				ShowMessageBox("success", $(result).find("message").text());
+    			}
+    			else
+    			{
+    				ShowMessageBox("error", $(result).find("message").text());
+    			}
+    			//$('#result').html(result);
+    		});
+    	}
+    });
+	 
+});   
+		    
+</script>
+</head>
+<body>
+    <div id="lot">
+	<!--<div id="header" class="goback" data-url="lots.html">
+        <img id="logo" src="css/img/picto-logo-auction-z.png" />-->
+        <div id="bt_menu" data-open="0"></div>
+        <div id="menu"></div>
+    <!--</div>-->
+    
+        <h1 class="goback" data-url="lots.html"></h1>
+       <div id="divSwiperContainer" class="swiper-container">
+			<div class="swiper-wrapper"></div>
+		</div>
+		<a class="arrow-left" href="#"></a>
+		<a class="arrow-right" href="#"></a>
+		<div class="pagination"></div>
+		
+    <div id="family_category"></div>
+    <div id="lot_id"></div>
+    <div id="lot_detail">
+        <div id="description"></div>   
+        <h3 id="dates"></h3>
+        
+        <div id="highest_bid"></div> 
+        <div id="follow" class="toggle toggle-modern"></div>
+        <div id="time_remaining"></div>
+        <br />
+        
+    </div>
+    <button id="bt_bid">Bid now</button>
+    </div>
+	
+	<div id="messageBox"></div>
+	</body>
+</html>
